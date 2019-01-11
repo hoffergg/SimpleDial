@@ -1,7 +1,6 @@
 package com.hehu.simpledial;
 
 import android.Manifest;
-import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -13,13 +12,14 @@ import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.ContactsContract;
-import android.support.annotation.RequiresPermission;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -32,9 +32,19 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     RecyclerView rvContacts;
     ContactsAdapter contactsAdapter;
+    Context mContext;
+    Handler mHandler = new Handler(new Handler.Callback(){
+        @Override
+        public boolean handleMessage(Message message) {
+            showContact((List<ContactModel>) message.obj);
+            return false;
+        }
+    });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mContext = this;
         setContentView(R.layout.activity_main);
         initView();
     }
@@ -45,10 +55,10 @@ public class MainActivity extends AppCompatActivity {
         rvContacts.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
             public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-                outRect.right = 20;
-                outRect.bottom = 20;
-                outRect.left = 20;
                 super.getItemOffsets(outRect, view, parent, state);
+                outRect.right = 10;
+                outRect.bottom = 10;
+                outRect.left = 10;
             }
         });
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
@@ -59,7 +69,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void show(){
-        List<ContactModel> contactModels = getContacts(this);
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                List<ContactModel> contactModels = getContacts(mContext);
+                Message message = mHandler.obtainMessage(0,contactModels);
+                mHandler.sendMessage(message);
+            }
+        });
+        thread.start();
+    }
+
+    public void showContact(List<ContactModel> contactModels){
         contactsAdapter = new ContactsAdapter(contactModels);
         rvContacts.setAdapter(contactsAdapter);
     }
@@ -75,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
                     Cursor cursorInfo = contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
                             ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{id}, null);
                     InputStream inputStream = ContactsContract.Contacts.openContactPhotoInputStream(ctx.getContentResolver(),
-                            ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, new Long(id)));
+                            ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, new Long(id)),true);
 
                     Uri person = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, new Long(id));
                     Uri pURI = Uri.withAppendedPath(person, ContactsContract.Contacts.Photo.CONTENT_DIRECTORY);
@@ -118,13 +139,27 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
             case R.id.all_contacts:
-                showContacts();
+                showContactsAPP();
+                break;
+            case R.id.home_setting:
+                startSetting();
                 break;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    void showContacts()
+    public void startSetting(){
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            final Intent intent = new Intent(Settings.ACTION_HOME_SETTINGS);
+            startActivity(intent);
+        }
+        else {
+            final Intent intent = new Intent(Settings.ACTION_SETTINGS);
+            startActivity(intent);
+        }
+    }
+
+    void showContactsAPP()
     {
         Intent i = new Intent();
         i.setAction(Intent.ACTION_VIEW);
