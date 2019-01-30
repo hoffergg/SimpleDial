@@ -3,6 +3,7 @@
     package="com.hehu.simpledial">
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
 
     <application
         android:allowBackup="true"

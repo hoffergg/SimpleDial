@@ -1,6 +1,7 @@
 package com.hehu.simpledial;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -178,5 +179,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
 
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+//        ActivityManager activityManager = (ActivityManager) getApplicationContext()
+//                .getSystemService(Context.ACTIVITY_SERVICE);
+//
+//        activityManager.moveTaskToFront(getTaskId(), 0);
     }
 }
